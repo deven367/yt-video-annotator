@@ -13,8 +13,6 @@ def start_app():
 
 def get_audio(url: str):
     audio_path = Path("./audio")
-    if not audio_path.exists():
-        audio_path.mkdir(exist_ok=True)
     with working_directory(audio_path):
         # subprocess.run(['youtube-dl', '-F', 'bestaudio[ext=m4a]', url])
         subprocess.run(["youtube-dl", "-x", "--audio-format", "mp3", url])
