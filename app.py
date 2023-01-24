@@ -41,6 +41,9 @@ def main():
             with open(srt) as f:
                 st.download_button('Download SRT', f, file_name=f'{name}.srt')
 
+    # subprocess.run(['rm', '-rf', 'audio'])
+    # subprocess.run(['rm', '-rf', 'srt'])
+
 
 if __name__ == "__main__":
     main()
