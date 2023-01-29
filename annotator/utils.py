@@ -17,6 +17,11 @@ def get_audio(url: str):
         # subprocess.run(['youtube-dl', '-F', 'bestaudio[ext=m4a]', url])
         subprocess.run(["youtube-dl", "-x", "--audio-format", "mp3", url])
 
+def get_v_from_url(url):
+    _, val = url.split('?v=')
+    return val.split('&')[0]
+
+
 
 def annotate(audio_src, model_size="tiny"):
     model = whisper.load_model(model_size, device="cpu")
