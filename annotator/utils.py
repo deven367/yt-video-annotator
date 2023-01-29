@@ -5,6 +5,7 @@ import numpy as np
 import subprocess
 from fastcore.foundation import working_directory, L
 from pathlib import Path
+import torch
 
 
 def start_app():
@@ -24,7 +25,8 @@ def get_v_from_url(url):
 
 
 def annotate(audio_src, model_size="tiny"):
-    model = whisper.load_model(model_size, device="cpu")
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    model = whisper.load_model(model_size, device=device)
     result = model.transcribe(audio_src)
     return result
 
