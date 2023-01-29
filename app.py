@@ -36,10 +36,10 @@ def main():
         with working_directory(SRT_PATH):
             write_srt(s, name)
 
-        with working_directory(SRT_PATH):
-            srt = globtastic('.', file_glob='*.srt')[0]
-            with open(srt) as f:
-                st.download_button('Download SRT', f, file_name=f'{name}.srt')
+            with working_directory(SRT_PATH):
+                srt = globtastic('.', file_glob='*.srt', file_re=name)[0]
+                with open(srt) as f:
+                    st.download_button('Download SRT', f, file_name=f'{name}.srt')
 
     # subprocess.run(['rm', '-rf', 'audio'])
     # subprocess.run(['rm', '-rf', 'srt'])
