@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import subprocess
-from fastcore.foundation import working_directory
+from fastcore.foundation import working_directory, L
 from pathlib import Path
 
 
@@ -41,13 +41,15 @@ def df_from_result(result):
 
 
 def find_word_timestamp(df, *words):
+    l = L()
     for word in words:
         vals = df["text"].str.find(word).values
         arr = np.where(vals > 1)
-        times = df.iloc[arr]["start"].values
-        for t in times:
-            t = t.split(".")[:-1]
-            print(f"{word} is said on {t} timestamp")
+        times = list(df.iloc[arr]["start"].values)
+        nt = L(times).map(lambda x: x.split(".")[:-1])
+        l.append(nt)
+    return l
+
 
 
 def generate_srt(df):
