@@ -14,28 +14,55 @@ if not AUDIO_PATH.exists(): AUDIO_PATH.mkdir(exist_ok=True)
 
 def make_sidebar():
     with st.sidebar:
-        st.write('App')
-        st.write('YouTube')
+        st.markdown('## yt-video-annotator')
+        st.write('Link to the GitHub repo')
+
+@st.cache(allow_output_mutation=True)
+def caption_from_url(url):
+    audio_src = get_audio(url)
+    v = get_v_from_url(url)
+    audio_src = globtastic(AUDIO_PATH, file_glob='*.mp3', file_re=v)[0]
+    result = annotate(audio_src)
+    df = df_from_result(result)
+    return audio_src, df
+
+
 
 
 def main():
+    url, name = None, None
     make_sidebar()
-    # st.write('This is it!')
-    url = st.text_input('Enter URL for the YT video')
+    col1, col2 = st.columns([1.2, 1])
+    with col1:
+        url = st.text_input('Enter URL for the YT video')
+        st.video(url)
 
-    if st.button('Generate SRT'):
-        audio_src = get_audio(url)
-        audio_src = globtastic(AUDIO_PATH, file_glob='*.mp3')[0]
-        result = annotate(audio_src)
-        df = df_from_result(result)
+    with col2:
+        default_opt = 'Search for words'
+        opt = st.radio('What do you wish to do?', [default_opt, 'Generate subtitles for the entire video'])
+        if opt == default_opt:
+            st.markdown('### Search for words in the video')
+            words = st.text_input('Enter words separated by a comma')
+            words = words.split(',')
 
-        # st.write(result.get('segments', 'wrong key'))
-        st.write(df)
-        name = Path(audio_src).stem
-        s = generate_srt(df)
-        with working_directory(SRT_PATH):
-            write_srt(s, name)
+            if st.button('Get Timestamps'):
+                audio_src, df = caption_from_url(url)
+                times = find_word_timestamp(df, *words)
+                times = np.asarray(times).reshape(len(words), -1)
+                # st.write(times)
+                for i, word in enumerate(words):
+                    st.write(times[i].flatten())
+                    st.write(f"{word} is said on {times[i].flatten()} timestamp")
 
+        else:
+            if st.button('Generate SRT'):
+                audio_src, df = caption_from_url(url)
+                name = Path(audio_src).stem
+                s = generate_srt(df)
+                with working_directory(SRT_PATH):
+                    write_srt(s, name)
+
+        if name is not None:
             with working_directory(SRT_PATH):
                 srt = globtastic('.', file_glob='*.srt', file_re=name)[0]
                 with open(srt) as f:
