@@ -64,7 +64,8 @@ def main():
 
         if name is not None:
             with working_directory(SRT_PATH):
-                srt = globtastic('.', file_glob='*.srt', file_re=name)[0]
+                key = get_v_from_url(url)
+                srt = globtastic('.', file_glob='*.srt', file_re=key)[0]
                 with open(srt) as f:
                     st.download_button('Download SRT', f, file_name=f'{name}.srt')
 
