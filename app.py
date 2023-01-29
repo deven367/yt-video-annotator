@@ -32,9 +32,10 @@ def caption_from_url(url):
 def main():
     url, name = None, None
     make_sidebar()
+    place = 'https://www.youtube.com/watch?v=C0DPdy98e4c&ab_channel=SimonYapp'
     col1, col2 = st.columns([1.2, 1])
     with col1:
-        url = st.text_input('Enter URL for the YT video')
+        url = st.text_input('Enter URL for the YT video', place)
         st.video(url)
 
     with col2:
