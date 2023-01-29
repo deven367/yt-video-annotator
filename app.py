@@ -51,7 +51,6 @@ def main():
                 times = np.asarray(times).reshape(len(words), -1)
                 # st.write(times)
                 for i, word in enumerate(words):
-                    st.write(times[i].flatten())
                     st.write(f"{word} is said on {times[i].flatten()} timestamp")
 
         else:
