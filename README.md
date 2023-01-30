@@ -4,9 +4,8 @@
 
 You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator/)
 
-:::note
-The app inference is slow as the inference is running on a CPU, if you have GPU on your local system, the app will work a lot faster.
-:::
+> **Note**
+> The app inference is slow as the inference is running on a CPU, if you have GPU on your local system, the app will work a lot faster.
 
 ## Installation
 
