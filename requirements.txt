@@ -1,5 +1,5 @@
 fastcore==1.5.29
 youtube-dl==2021.12.17
 openai-whisper==20230314
-streamlit==1.24.1
+streamlit==1.25.0
 
