@@ -1,11 +1,12 @@
-import whisper
 import datetime
-import pandas as pd
-import numpy as np
 import subprocess
-from fastcore.foundation import working_directory, L
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 import torch
+import whisper
+from fastcore.foundation import L, working_directory
 
 
 def start_app():
@@ -16,7 +17,7 @@ def get_audio(url: str):
     audio_path = Path("./audio")
     with working_directory(audio_path):
         # subprocess.run(['youtube-dl', '-F', 'bestaudio[ext=m4a]', url])
-        subprocess.run(["youtube-dl", "-x", "--audio-format", "mp3", url])
+        subprocess.run(["yt-dlp", "-x", "--audio-format", "wav", url])
 
 def get_v_from_url(url):
     _, val = url.split('?v=')
