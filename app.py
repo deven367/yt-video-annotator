@@ -5,7 +5,7 @@ import streamlit as st
 from fastcore.xtras import globtastic
 
 from annotator.utils import (
-    annotate,
+    Annotator,
     df_from_result,
     find_word_timestamp,
     generate_srt,
@@ -33,12 +33,13 @@ def make_sidebar():
         st.write("Link to the GitHub repo")
 
 
-@st.cache_resource
+# @st.cache_resource
 def caption_from_url(url):
     audio_src = get_audio(url)
     v = get_v_from_url(url)
-    audio_src = globtastic(AUDIO_PATH, file_glob="*.mp3", file_re=v)[0]
-    result = annotate(audio_src)
+    audio_src = globtastic(AUDIO_PATH, file_glob="*.wav", file_re=v)[0]
+    ann = Annotator(audio_src)
+    result = ann.annotate_quantize(audio_src)
     df = df_from_result(result)
     return audio_src, df
 
