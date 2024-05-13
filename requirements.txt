@@ -1,4 +1,4 @@
-fastcore==1.5.29
+fastcore==1.5.35
 openai-whisper==20231117
 streamlit==1.33.0
 yt-dlp==2024.4.9
