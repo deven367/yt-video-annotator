@@ -19,14 +19,14 @@ def get_audio(url: str):
         # subprocess.run(['youtube-dl', '-F', 'bestaudio[ext=m4a]', url])
         subprocess.run(["yt-dlp", "-x", "--audio-format", "wav", url])
 
-def get_v_from_url(url):
-    _, val = url.split('?v=')
-    return val.split('&')[0]
 
+def get_v_from_url(url):
+    _, val = url.split("?v=")
+    return val.split("&")[0]
 
 
 def annotate(audio_src, model_size="tiny"):
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = whisper.load_model(model_size, device=device)
     result = model.transcribe(audio_src)
     return result
@@ -44,15 +44,14 @@ def df_from_result(result):
 
 
 def find_word_timestamp(df, *words):
-    l = L()
+    timestamps = L()
     for word in words:
         vals = df["text"].str.find(word).values
         arr = np.where(vals > 1)
         times = list(df.iloc[arr]["start"].values)
         nt = L(times).map(lambda x: x.split(".")[:-1])
-        l.append(nt)
-    return l
-
+        timestamps.append(nt)
+    return timestamps
 
 
 def generate_srt(df):
