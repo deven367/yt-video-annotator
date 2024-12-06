@@ -1,4 +1,4 @@
 fastcore==1.7.23
 openai-whisper==20240930
-yt-dlp==2024.11.18
+yt-dlp==2024.12.3
 streamlit==1.40.2
