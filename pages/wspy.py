@@ -5,47 +5,20 @@ This page provides real-time transcription capabilities for audio streams
 and YouTube videos using Whisper.
 """
 
-import subprocess
 from pathlib import Path
 
 import streamlit as st
-from fastcore.xtras import globtastic
 
-from annotator.utils import annotate2, get_audio, get_v_from_url
+from annotator.utils import (
+    AUDIO_PATH,
+    annotate2,
+    convert_to_whisper_format,
+    filter_blank_audio,
+    get_audio,
+    get_v_from_url,
+)
 
 st.set_page_config(layout="wide", page_title="Live Transcription")
-
-AUDIO_PATH = Path("./audio")
-if not AUDIO_PATH.exists():
-    AUDIO_PATH.mkdir()
-
-
-def convert_to_wav(input_path: Path, output_path: Path) -> bool:
-    """
-    Convert audio file to 16kHz mono WAV format required by Whisper.
-    
-    Args:
-        input_path: Path to input audio file
-        output_path: Path to output WAV file
-        
-    Returns:
-        bool: True if conversion successful, False otherwise
-    """
-    try:
-        subprocess.run(
-            [
-                "ffmpeg", "-y", "-i", str(input_path),
-                "-ar", "16000",  # 16kHz sample rate
-                "-ac", "1",      # mono
-                "-c:a", "pcm_s16le",  # 16-bit PCM
-                str(output_path)
-            ],
-            check=True,
-            capture_output=True
-        )
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
 
 
 def format_timestamp(centiseconds: int) -> str:
@@ -57,13 +30,8 @@ def format_timestamp(centiseconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
-def filter_blank_audio(segments: list) -> list:
-    """Filter out BLANK_AUDIO segments from results."""
-    return [seg for seg in segments if "[BLANK_AUDIO]" not in seg.text]
-
-
 def main():
-    st.title("🎙️ Audio Transcription")
+    st.title("Audio Transcription")
     st.markdown("Transcribe YouTube videos or upload audio files for transcription.")
 
     # Sidebar for model selection
@@ -76,7 +44,7 @@ def main():
             help="Larger models are more accurate but slower"
         )
         st.info(
-            "💡 **Model Info:**\n"
+            "**Model Info:**\n"
             "- **tiny**: Fastest, least accurate\n"
             "- **base**: Good balance (recommended)\n"
             "- **small**: Better accuracy\n"
@@ -85,7 +53,7 @@ def main():
         )
 
     # Tab selection for input method
-    tab1, tab2 = st.tabs(["📺 YouTube URL", "📁 Upload Audio"])
+    tab1, tab2 = st.tabs(["YouTube URL", "Upload Audio"])
 
     with tab1:
         st.markdown("### Transcribe from YouTube")
@@ -102,52 +70,49 @@ def main():
                 st.video(url)
 
             with col2:
-                if st.button("🎯 Start Transcription", key="transcribe_yt"):
-                    with st.spinner("Downloading audio from YouTube..."):
+                if st.button("Start Transcription", key="transcribe_yt"):
+                    with st.spinner("Processing audio from YouTube..."):
                         try:
-                            get_audio(url)
                             video_id = get_v_from_url(url)
                             
-                            # Find the downloaded audio file
-                            audio_files = globtastic(AUDIO_PATH, file_re=video_id)
+                            # Download and convert audio (uses caching)
+                            audio_path, was_cached = get_audio(url)
                             
-                            if audio_files:
-                                audio_file = audio_files[0]
-                                st.success(f"Audio downloaded: {Path(audio_file).name}")
-                                
-                                with st.spinner("Transcribing... This may take a while."):
-                                    # Use the working annotate2 function from utils
-                                    segments = annotate2(str(audio_file), model_size=model_size)
-                                    segments = filter_blank_audio(segments)
-                                
-                                if segments:
-                                    st.success("✅ Transcription complete!")
-                                    
-                                    # Display results
-                                    st.markdown("### Transcription Results")
-                                    
-                                    # Full text
-                                    full_text = " ".join(seg.text.strip() for seg in segments)
-                                    st.text_area("Full Transcription", full_text, height=200)
-                                    
-                                    # Timestamped segments
-                                    with st.expander("📋 View Timestamped Segments"):
-                                        for seg in segments:
-                                            start = format_timestamp(seg.t0)
-                                            end = format_timestamp(seg.t1)
-                                            st.markdown(f"**[{start} - {end}]** {seg.text.strip()}")
-                                    
-                                    # Download button
-                                    st.download_button(
-                                        "📥 Download Transcription",
-                                        full_text,
-                                        file_name=f"{video_id}_transcription.txt",
-                                        mime="text/plain"
-                                    )
-                                else:
-                                    st.warning("No speech detected in the audio. The video may not contain speech or the audio quality may be too low.")
+                            if was_cached:
+                                st.info(f"Using cached audio for: {video_id}")
                             else:
-                                st.error("Could not find downloaded audio file.")
+                                st.success(f"Audio downloaded and converted: {audio_path.name}")
+                            
+                            with st.spinner("Transcribing... This may take a while."):
+                                segments = annotate2(str(audio_path), model_size=model_size)
+                                segments = filter_blank_audio(segments)
+                            
+                            if segments:
+                                st.success("Transcription complete!")
+                                
+                                # Display results
+                                st.markdown("### Transcription Results")
+                                
+                                # Full text
+                                full_text = " ".join(seg.text.strip() for seg in segments)
+                                st.text_area("Full Transcription", full_text, height=200)
+                                
+                                # Timestamped segments
+                                with st.expander("View Timestamped Segments"):
+                                    for seg in segments:
+                                        start = format_timestamp(seg.t0)
+                                        end = format_timestamp(seg.t1)
+                                        st.markdown(f"**[{start} - {end}]** {seg.text.strip()}")
+                                
+                                # Download button
+                                st.download_button(
+                                    "Download Transcription",
+                                    full_text,
+                                    file_name=f"{video_id}_transcription.txt",
+                                    mime="text/plain"
+                                )
+                            else:
+                                st.warning("No speech detected in the audio. The video may not contain speech or the audio quality may be too low.")
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
 
@@ -162,7 +127,7 @@ def main():
         if uploaded_file is not None:
             st.audio(uploaded_file)
             
-            if st.button("🎯 Start Transcription", key="transcribe_upload"):
+            if st.button("Start Transcription", key="transcribe_upload"):
                 # Save uploaded file temporarily
                 temp_path = AUDIO_PATH / uploaded_file.name
                 converted_path = AUDIO_PATH / f"converted_{Path(uploaded_file.name).stem}.wav"
@@ -174,17 +139,16 @@ def main():
                     try:
                         # Convert to proper format for Whisper (16kHz mono WAV)
                         audio_to_transcribe = temp_path
-                        if convert_to_wav(temp_path, converted_path):
+                        if convert_to_whisper_format(temp_path, converted_path):
                             audio_to_transcribe = converted_path
                             st.info("Audio converted to 16kHz WAV format.")
                         
                         with st.spinner("Transcribing... This may take a while."):
-                            # Use the working annotate2 function from utils
                             segments = annotate2(str(audio_to_transcribe), model_size=model_size)
                             segments = filter_blank_audio(segments)
                         
                         if segments:
-                            st.success("✅ Transcription complete!")
+                            st.success("Transcription complete!")
                             
                             # Display results
                             st.markdown("### Transcription Results")
@@ -194,7 +158,7 @@ def main():
                             st.text_area("Full Transcription", full_text, height=200)
                             
                             # Timestamped segments
-                            with st.expander("📋 View Timestamped Segments"):
+                            with st.expander("View Timestamped Segments"):
                                 for seg in segments:
                                     start = format_timestamp(seg.t0)
                                     end = format_timestamp(seg.t1)
@@ -202,7 +166,7 @@ def main():
                             
                             # Download button
                             st.download_button(
-                                "📥 Download Transcription",
+                                "Download Transcription",
                                 full_text,
                                 file_name=f"{uploaded_file.name}_transcription.txt",
                                 mime="text/plain"
