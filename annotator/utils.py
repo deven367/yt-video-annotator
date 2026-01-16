@@ -1,13 +1,17 @@
 import datetime
 import subprocess
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import torch
-import whisper
-from fastcore.foundation import L, working_directory
 
+# import torch
+# import whisper
+from fastcore.foundation import L, working_directory
+from pywhispercpp.model import Model
+
+ROOT_PATH = Path(__file__).parent.parent
 
 def start_app():
     subprocess.run(["streamlit", "run", "app.py"])
@@ -20,14 +24,36 @@ def get_audio(url: str):
         subprocess.run(["yt-dlp", "-x", "--audio-format", "wav", url])
 
 
-def get_v_from_url(url):
-    _, val = url.split("?v=")
-    return val.split("&")[0]
+def get_v_from_url(url:str):
+    try:
+        _, val = url.split("?v=")
+        return val.split("&")[0]
+    except ValueError:
+        if url.startswith("https://youtu.be/"):
+            to_parse = url.split(".be/")[1]
+            return to_parse.split("?")[0]
 
 
-def annotate(audio_src, model_size="tiny"):
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    model = whisper.load_model(model_size, device=device)
+# def annotate(audio_src, model_size="tiny"):
+#     device = "cuda:0" if torch.cuda.is_available() else "cpu"
+#     model = whisper.load_model(model_size, device=device)
+#     result = model.transcribe(audio_src)
+#     return result
+
+def annotate2(audio_src, model_size="base", single_segment=False):
+    """
+    Transcribe audio using pywhispercpp.
+    
+    Args:
+        audio_src: Path to the audio file
+        model_size: Whisper model size ('tiny', 'base', 'small', 'medium', 'large')
+        single_segment: If True, process entire audio as one segment. 
+                       Set to False (default) for better results on longer audio.
+    
+    Returns:
+        List of transcription segments with timestamps
+    """
+    model = Model(model=model_size, single_segment=single_segment)
     result = model.transcribe(audio_src)
     return result
 
@@ -37,11 +63,21 @@ def get_time(seconds):
 
 
 def df_from_result(result):
-    df = pd.json_normalize(result["segments"])
-    df["start"] = df["start"].apply(get_time)
-    df["end"] = df["end"].apply(get_time)
-    return df
+    # df = pd.json_normalize(result["segments"])
+    # df["start"] = df["start"].apply(get_time)
+    # df["end"] = df["end"].apply(get_time)
+    # return df
 
+    d = defaultdict(list)
+    for segment in result:
+        d['start'].append(segment.t0)
+        d['end'].append(segment.t1)
+        d['text'].append(segment.text)
+    df = pd.DataFrame(d)
+    df['start'] = df['start'].apply(get_time)
+    df['end'] = df['end'].apply(get_time)
+
+    return df
 
 def find_word_timestamp(df, *words):
     timestamps = L()
