@@ -5,7 +5,8 @@ import streamlit as st
 from fastcore.xtras import globtastic
 
 from annotator.utils import (
-    annotate,
+    # annotate,
+    annotate2,
     df_from_result,
     find_word_timestamp,
     generate_srt,
@@ -16,7 +17,6 @@ from annotator.utils import (
 )
 
 st.set_page_config(layout="wide")
-
 
 SRT_PATH = Path("srt")
 if not SRT_PATH.exists():
@@ -30,15 +30,29 @@ if not AUDIO_PATH.exists():
 def make_sidebar():
     with st.sidebar:
         st.markdown("## yt-video-annotator")
-        st.write("Link to the GitHub repo")
+        st.markdown(
+            "🔗 [GitHub Repository](https://github.com/deven367/yt-video-annotator)"
+        )
+        st.markdown("---")
+        st.markdown(
+            "**About:** Annotate YouTube videos on-the-fly using Whisper speech recognition."
+        )
+        st.markdown(
+            "**Features:**\n"
+            "- 🔍 Search for words in videos\n"
+            "- 📝 Generate SRT subtitles\n"
+            "- ⬇️ Download transcriptions"
+        )
 
 
 @st.cache_resource
 def caption_from_url(url):
     audio_src = get_audio(url)
     v = get_v_from_url(url)
-    audio_src = globtastic(AUDIO_PATH, file_glob="*.mp3", file_re=v)[0]
-    result = annotate(audio_src)
+    st.write(v)
+    audio_src = globtastic(AUDIO_PATH, file_re=v)[0]
+    result = annotate2(audio_src)
+    # st.write(result[0])
     df = df_from_result(result)
     return audio_src, df
 
