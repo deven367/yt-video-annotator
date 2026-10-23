@@ -19,12 +19,12 @@ def load_model(model_size: str = "base") -> Model:
 
     Args:
         model_size: Size of the model to load. Options: 'tiny', 'base', 'small', 
-                   'medium', 'large'. Default is 'base'.
+                   'medium', 'large-v3'. Default is 'base'.
 
     Returns:
         Model: Loaded pywhispercpp Model instance.
     """
-    return Model(model=model_size, single_segment=True)
+    return Model(model=model_size)
 
 
 def transcribe_audio(
@@ -93,4 +93,4 @@ if __name__ == "__main__":
         print(f"Transcription:\n{text}")
     else:
         print("Usage: python inference.py <audio_file>")
-        print("\nAvailable model sizes: tiny, base, small, medium, large")
+        print("\nAvailable model sizes: tiny, base, small, medium, large-v3")

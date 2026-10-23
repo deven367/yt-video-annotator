@@ -1,6 +1,6 @@
+import subprocess
 from pathlib import Path
 
-import numpy as np
 import streamlit as st
 
 from annotator.utils import (
@@ -11,15 +11,13 @@ from annotator.utils import (
     generate_srt,
     get_audio,
     get_v_from_url,
-    working_directory,
     write_srt,
 )
 
 st.set_page_config(layout="wide")
 
 SRT_PATH = Path("srt")
-if not SRT_PATH.exists():
-    SRT_PATH.mkdir()
+SRT_PATH.mkdir(exist_ok=True)
 
 
 def make_sidebar():
@@ -47,10 +45,12 @@ def caption_from_url(url: str):
     
     Uses caching to avoid re-downloading and re-transcribing the same video.
     """
-    video_id = get_v_from_url(url)
-    
-    # Download and convert audio (checks cache first)
-    audio_path, was_cached = get_audio(url)
+    try:
+        video_id = get_v_from_url(url)
+        audio_path, was_cached = get_audio(url)
+    except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        st.error(f"Could not process video: {error}")
+        st.stop()
     
     if was_cached:
         st.info(f"Using cached audio for video: {video_id}")
@@ -99,11 +99,9 @@ def main():
                     
                     if df is not None:
                         times = find_word_timestamp(df, *words)
-                        times = np.asarray(times, dtype=object).reshape(len(words), -1)
-                        
+
                         st.markdown("### Results")
-                        for i, word in enumerate(words):
-                            timestamps = times[i].flatten()
+                        for word, timestamps in zip(words, times):
                             if len(timestamps) > 0:
                                 st.success(f"**{word}** found at: {', '.join(map(str, timestamps))}")
                             else:
@@ -117,24 +115,16 @@ def main():
                     if df is not None:
                         name = Path(audio_src).stem
                         s = generate_srt(df)
-                        with working_directory(SRT_PATH):
-                            write_srt(s, name)
+                        write_srt(s, SRT_PATH / name)
                         st.success("SRT file generated!")
 
         if name is not None:
-            with working_directory(SRT_PATH):
-                key = get_v_from_url(url)
-                from fastcore.xtras import globtastic
-                srt_files = globtastic(".", file_glob="*.srt", file_re=key)
-                if srt_files:
-                    srt = srt_files[0]
-                    with open(srt) as f:
-                        st.download_button(
-                            "Download SRT",
-                            f.read(),
-                            file_name=f"{name}.srt",
-                            mime="text/plain"
-                        )
+            st.download_button(
+                "Download SRT",
+                s,
+                file_name=f"{name}.srt",
+                mime="application/x-subrip",
+            )
 
 
 if __name__ == "__main__":

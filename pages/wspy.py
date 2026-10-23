@@ -1,16 +1,15 @@
 """
-Live Stream Transcription Page
+Audio Transcription Page
 
-This page provides real-time transcription capabilities for audio streams
-and YouTube videos using Whisper.
+Transcribe uploaded audio files and YouTube videos using Whisper.
 """
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import streamlit as st
 
 from annotator.utils import (
-    AUDIO_PATH,
     annotate2,
     convert_to_whisper_format,
     filter_blank_audio,
@@ -18,7 +17,7 @@ from annotator.utils import (
     get_v_from_url,
 )
 
-st.set_page_config(layout="wide", page_title="Live Transcription")
+st.set_page_config(layout="wide", page_title="Audio Transcription")
 
 
 def format_timestamp(centiseconds: int) -> str:
@@ -39,7 +38,7 @@ def main():
         st.markdown("## Settings")
         model_size = st.selectbox(
             "Model Size",
-            options=["tiny", "base", "small", "medium", "large"],
+            options=["tiny", "base", "small", "medium", "large-v3"],
             index=1,  # Default to 'base'
             help="Larger models are more accurate but slower"
         )
@@ -49,7 +48,7 @@ def main():
             "- **base**: Good balance (recommended)\n"
             "- **small**: Better accuracy\n"
             "- **medium**: High accuracy\n"
-            "- **large**: Best accuracy, slowest"
+            "- **large-v3**: Best accuracy, slowest"
         )
 
     # Tab selection for input method
@@ -128,23 +127,17 @@ def main():
             st.audio(uploaded_file)
             
             if st.button("Start Transcription", key="transcribe_upload"):
-                # Save uploaded file temporarily
-                temp_path = AUDIO_PATH / uploaded_file.name
-                converted_path = AUDIO_PATH / f"converted_{Path(uploaded_file.name).stem}.wav"
-                
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                
-                with st.spinner("Processing audio..."):
+                with st.spinner("Processing audio..."), TemporaryDirectory() as temp_dir:
                     try:
-                        # Convert to proper format for Whisper (16kHz mono WAV)
-                        audio_to_transcribe = temp_path
-                        if convert_to_whisper_format(temp_path, converted_path):
-                            audio_to_transcribe = converted_path
-                            st.info("Audio converted to 16kHz WAV format.")
+                        temp_path = Path(temp_dir) / f"upload{Path(uploaded_file.name).suffix}"
+                        converted_path = Path(temp_dir) / "converted.wav"
+                        temp_path.write_bytes(uploaded_file.getbuffer())
+                        if not convert_to_whisper_format(temp_path, converted_path):
+                            raise RuntimeError("Could not convert the uploaded audio.")
+                        st.info("Audio converted to 16kHz WAV format.")
                         
                         with st.spinner("Transcribing... This may take a while."):
-                            segments = annotate2(str(audio_to_transcribe), model_size=model_size)
+                            segments = annotate2(str(converted_path), model_size=model_size)
                             segments = filter_blank_audio(segments)
                         
                         if segments:
@@ -175,12 +168,6 @@ def main():
                             st.warning("No speech detected in the audio. The file may not contain speech or the audio quality may be too low.")
                     except Exception as e:
                         st.error(f"Error during transcription: {str(e)}")
-                    finally:
-                        # Clean up temp files
-                        if temp_path.exists():
-                            temp_path.unlink()
-                        if converted_path.exists():
-                            converted_path.unlink()
 
 
 if __name__ == "__main__":
