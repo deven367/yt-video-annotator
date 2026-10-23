@@ -42,7 +42,7 @@ def make_sidebar():
 def caption_from_url(url: str):
     """
     Download audio from URL and transcribe it.
-    
+
     Uses caching to avoid re-downloading and re-transcribing the same video.
     """
     try:
@@ -51,22 +51,22 @@ def caption_from_url(url: str):
     except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as error:
         st.error(f"Could not process video: {error}")
         st.stop()
-    
+
     if was_cached:
         st.info(f"Using cached audio for video: {video_id}")
     else:
         st.success(f"Audio downloaded and converted: {audio_path.name}")
-    
+
     # Transcribe
     result = annotate2(str(audio_path))
-    
+
     # Filter out blank audio segments
     result = filter_blank_audio(result)
-    
+
     if not result:
         st.warning("No speech detected in the audio.")
         return str(audio_path), None
-    
+
     df = df_from_result(result)
     return str(audio_path), df
 
@@ -76,7 +76,7 @@ def main():
     make_sidebar()
     place = "https://www.youtube.com/watch?v=C0DPdy98e4c&ab_channel=SimonYapp"
     col1, col2 = st.columns([1.2, 1])
-    
+
     with col1:
         url = st.text_input("Enter URL for the YT video", place)
         st.video(url)
@@ -87,7 +87,7 @@ def main():
             "What do you wish to do?",
             [default_opt, "Generate subtitles for the entire video"],
         )
-        
+
         if opt == default_opt:
             st.markdown("### Search for words in the video")
             words = st.text_input("Enter words separated by a comma")
@@ -96,7 +96,7 @@ def main():
             if st.button("Get Timestamps") and words:
                 with st.spinner("Processing video..."):
                     audio_src, df = caption_from_url(url)
-                    
+
                     if df is not None:
                         times = find_word_timestamp(df, *words)
 
@@ -111,7 +111,7 @@ def main():
             if st.button("Generate SRT"):
                 with st.spinner("Processing video..."):
                     audio_src, df = caption_from_url(url)
-                    
+
                     if df is not None:
                         name = Path(audio_src).stem
                         s = generate_srt(df)

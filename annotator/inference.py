@@ -18,7 +18,7 @@ def load_model(model_size: str = "base") -> Model:
     Load a Whisper model.
 
     Args:
-        model_size: Size of the model to load. Options: 'tiny', 'base', 'small', 
+        model_size: Size of the model to load. Options: 'tiny', 'base', 'small',
                    'medium', 'large-v3'. Default is 'base'.
 
     Returns:
@@ -45,7 +45,7 @@ def transcribe_audio(
     """
     if model is None:
         model = load_model(model_size)
-    
+
     audio_path = str(audio_path)
     result = model.transcribe(audio_path)
     return result
@@ -85,7 +85,7 @@ def get_local_model_path(filename: str = "ggml-base.bin") -> Path:
 if __name__ == "__main__":
     # Example usage
     import sys
-    
+
     if len(sys.argv) > 1:
         audio_file = sys.argv[1]
         print(f"Transcribing: {audio_file}")
