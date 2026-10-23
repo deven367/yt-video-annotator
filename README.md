@@ -5,14 +5,20 @@
 You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator/)
 
 > **Note**
-> The app inference is slow as the inference is running on a CPU, if you have GPU on your local system, the app will work a lot faster.
+> Transcription runs locally with pywhispercpp. Speed depends on the model size and available hardware.
 
 ## Installation
 
-1. Create a virtual env with the environment manager of your choice
+1. Create a Python 3.8+ virtual env with the environment manager of your choice
 2. Activate the environment
-3. Install the dependencies using ```pip install -e .```
+3. Install [FFmpeg](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, then install the Python dependencies using ```pip install -e .```
 4. To run the app locally in your terminal, type `run_app`
+
+The first transcription downloads the selected Whisper model. Use a YouTube video URL, or open the Audio Transcription page to upload an audio file.
+
+Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
+
+To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
 
 ## Contributing
 
