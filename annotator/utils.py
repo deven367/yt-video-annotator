@@ -25,10 +25,10 @@ def ensure_audio_dir():
 def get_cached_audio(video_id: str) -> Optional[Path]:
     """
     Check if audio for a video already exists (converted WAV format).
-    
+
     Args:
         video_id: YouTube video ID
-        
+
     Returns:
         Path to the converted WAV file if it exists, None otherwise
     """
@@ -42,11 +42,11 @@ def get_cached_audio(video_id: str) -> Optional[Path]:
 def convert_to_whisper_format(input_path: Path, output_path: Path) -> bool:
     """
     Convert audio file to 16kHz mono WAV format required by Whisper.
-    
+
     Args:
         input_path: Path to input audio file
         output_path: Path to output WAV file
-        
+
     Returns:
         bool: True if conversion successful, False otherwise
     """
@@ -74,13 +74,13 @@ def convert_to_whisper_format(input_path: Path, output_path: Path) -> bool:
 def get_audio(url: str, force_download: bool = False) -> Tuple[Path, bool]:
     """
     Download and convert audio from YouTube URL.
-    
+
     Checks if audio already exists and is properly converted before downloading.
-    
+
     Args:
         url: YouTube video URL
         force_download: If True, re-download even if cached
-        
+
     Returns:
         Tuple of (path to converted audio file, whether it was cached)
     """
@@ -129,12 +129,12 @@ def get_v_from_url(url: str):
 def annotate2(audio_src, model_size="base", single_segment=False):
     """
     Transcribe audio using pywhispercpp.
-    
+
     Args:
         audio_src: Path to the audio file
         model_size: Whisper model size ('tiny', 'base', 'small', 'medium', 'large-v3')
         single_segment: Force a single segment per decoding window when True.
-    
+
     Returns:
         List of transcription segments with timestamps
     """
@@ -146,10 +146,10 @@ def annotate2(audio_src, model_size="base", single_segment=False):
 def filter_blank_audio(segments: list) -> list:
     """
     Filter out BLANK_AUDIO segments from transcription results.
-    
+
     Args:
         segments: List of transcription segments
-        
+
     Returns:
         Filtered list without BLANK_AUDIO segments
     """
