@@ -1,8 +1,19 @@
+---
+title: Yt Video Annotator
+colorFrom: green
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.25.0
+python_version: "3.11"
+app_file: annotator/app.py
+pinned: false
+---
+
 # yt-video-annotator
 
 ## Try the app on hf-spaces
 
-You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator/)
+You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator-hf/)
 
 > **Note**
 > Transcription runs locally with pywhispercpp. Speed depends on the model size and available hardware.
