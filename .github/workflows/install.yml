@@ -17,3 +17,13 @@ jobs:
       - name: Test installed wheel outside the checkout
         working-directory: ${{ runner.temp }}
         run: python -m pytest "$GITHUB_WORKSPACE/tests" -q
+      - name: Install from source on minimum Python
+        run: python -m pip install --force-reinstall --no-deps dist/*.tar.gz
+      - name: Smoke source installation
+        working-directory: ${{ runner.temp }}
+        run: run_app --help
+      - name: Install editable on minimum Python
+        run: python -m pip install --no-deps -e .
+      - name: Smoke editable installation
+        working-directory: ${{ runner.temp }}
+        run: run_app --help && python -m pip check

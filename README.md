@@ -9,7 +9,7 @@ You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/de
 
 ## Installation
 
-1. Create a Python 3.8+ virtual env with the environment manager of your choice
+1. Create a Python 3.10+ virtual env with the environment manager of your choice (the setuptools build backend also requires Python 3.10+).
 2. Activate the environment
 3. Install [FFmpeg](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, then install the Python dependencies using ```pip install -e .```
 4. To run the app locally in your terminal, type `run_app` from any writable directory. The installed package includes the main UI and Audio Transcription page; audio and SRT files are stored under the working directory.
