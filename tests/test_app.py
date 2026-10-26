@@ -66,6 +66,30 @@ def test_video_errors_are_displayed_and_can_be_retried(app, error):
     assert "hello** found at:" in app.success[0].value
 
 
+
+@pytest.mark.parametrize("action", ["search", "srt"])
+@pytest.mark.parametrize(
+    "error", [RuntimeError("model loading failed"), Exception("inference failed")]
+)
+def test_transcription_failures_are_handled_and_retry_succeeds(app, action, error):
+    if action == "srt":
+        app.radio[0].set_value("Generate subtitles for the entire video").run()
+    else:
+        app.text_input[1].set_value("hello")
+    with patch.object(utils, "annotate2", side_effect=error):
+        app.button[0].click().run()
+    assert not app.exception
+    assert str(error) in app.error[0].value
+    assert not app.get("download_button")
+
+    app.button[0].click().run()
+    assert not app.exception
+    assert not app.error
+    if action == "srt":
+        assert len(app.get("download_button")) == 1
+    else:
+        assert "hello** found at:" in app.success[0].value
+
 @pytest.mark.parametrize(
     "filename", ["sample.wav", "C0DPdy98e4c_converted.wav", "../outside.wav"]
 )

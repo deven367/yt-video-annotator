@@ -1,4 +1,3 @@
-import subprocess
 from pathlib import Path
 
 import streamlit as st
@@ -48,7 +47,8 @@ def caption_from_url(url: str):
     try:
         video_id = get_v_from_url(url)
         audio_path, was_cached = get_audio(url)
-    except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        result = filter_blank_audio(annotate2(str(audio_path)))
+    except Exception as error:
         st.error(f"Could not process video: {error}")
         st.stop()
 
@@ -57,11 +57,6 @@ def caption_from_url(url: str):
     else:
         st.success(f"Audio downloaded and converted: {audio_path.name}")
 
-    # Transcribe
-    result = annotate2(str(audio_path))
-
-    # Filter out blank audio segments
-    result = filter_blank_audio(result)
 
     if not result:
         st.warning("No speech detected in the audio.")
