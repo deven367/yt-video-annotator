@@ -23,9 +23,9 @@ You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/de
 1. Create a Python 3.11+ virtual env with the environment manager of your choice.
 2. Activate the environment
 3. Install [FFmpeg](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, then install the Python dependencies using ```pip install -e .```
-4. To run the app locally in your terminal, type `run_app` from any writable directory. The installed package includes the main UI and Audio Transcription page; audio and SRT files are stored under the working directory.
+4. Run `run_app` from any writable directory. Audio and SRT files are stored under that directory.
 
-Streamlit options can be passed through, for example `run_app --server.port=8502`. Launcher failures return Streamlit's nonzero exit status.
+Streamlit options can be passed through, for example `run_app --server.port=8502`.
 
 The first transcription downloads the selected Whisper model. Use a YouTube video URL, or open the Audio Transcription page to upload an audio file.
 
@@ -37,20 +37,10 @@ Click a word-search timestamp or a segment's start time in **View Timestamped Se
 
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
 
-The main-page transcript cache expires after one hour and holds at most 32 videos. Converted WAVs in `audio/` are limited to 32 files and 512 MiB, keeping the most recently used files. Cleanup runs when audio is acquired and after a conversion is published; evicted videos are downloaded again on demand.
-
-Each operation pins its audio with a temporary hard link, so eviction cannot remove audio still being transcribed. Working paths are removed on context exit, including errors. Oversized audio is processed without retaining a cache entry. Active downloads/processing can temporarily exceed the cache budget; unrelated audio files, models, and SRT outputs are not part of this cache policy.
-
-For Python callers, `get_audio` is a context manager: keep transcription inside `with get_audio(url) as (audio_path, was_cached):` so the working path remains valid.
-
-To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
-
-CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel outside the checkout, and smoke-check source and editable installations on that minimum version.
-
-## Hugging Face Spaces
-
-The Space uses the native Streamlit SDK, with its runtime and packaged app entrypoint selected in the README header. `packages.txt` installs FFmpeg. The SDK installs dependencies before copying source, so `requirements.txt` installs this project from a pinned GitHub source archive, avoiding Git partial-clone failures. Update that revision when syncing code changes to invalidate the SDK's dependency cache. Application dependencies remain defined in `pyproject.toml`.
+Audio and transcript caches have bounded retention; evicted videos are downloaded again when needed.
 
 ## Contributing
 
 Issues and PRs are welcome. If you want me to implement a feature, create a Feature Request in the issues, I'll try my best to implement it.
+
+See [AGENTS.md](AGENTS.md) for contributor setup, verification commands, playback/cache contracts, and GitHub/Hugging Face deployment instructions.
