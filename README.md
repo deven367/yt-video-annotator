@@ -1,8 +1,19 @@
+---
+title: Yt Video Annotator
+colorFrom: green
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.66.1
+python_version: "3.11"
+app_file: annotator/app.py
+pinned: false
+---
+
 # yt-video-annotator
 
 ## Try the app on hf-spaces
 
-You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator/)
+You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/deven367/yt-video-annotator-hf/)
 
 > **Note**
 > Transcription runs locally with pywhispercpp. Speed depends on the model size and available hardware.
@@ -33,6 +44,10 @@ For Python callers, `get_audio` is a context manager: keep transcription inside 
 To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
 
 CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel outside the checkout, and smoke-check source and editable installations on that minimum version.
+
+## Hugging Face Spaces
+
+The Space uses the native Streamlit SDK, with its runtime and packaged app entrypoint selected in the README header. `packages.txt` installs FFmpeg. The SDK installs dependencies before copying source, so `requirements.txt` installs this project from a pinned application commit in the Space repository; update that revision when syncing code changes to invalidate the SDK's dependency cache. Application dependencies remain defined in `pyproject.toml`.
 
 ## Contributing
 
