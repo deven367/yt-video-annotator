@@ -130,3 +130,45 @@ def test_upload_works_without_audio_directory_and_cleans_up_on_failure(
     assert "Could not convert the uploaded audio" in page.error[0].value
     transcribe.assert_not_called()
     assert paths and not paths[0].exists()
+
+
+@pytest.mark.parametrize("method", ["youtube", "upload"])
+def test_transcription_survives_reruns_and_tracks_source_and_model(
+    tmp_path, monkeypatch, method
+):
+    monkeypatch.chdir(tmp_path)
+    upload = BytesIO(b"first recording")
+    upload.name = "recording.wav"
+    with (
+        patch.object(st, "file_uploader", return_value=upload if method == "upload" else None),
+        patch.object(utils, "get_audio", return_value=(tmp_path / "audio.wav", True)),
+        patch.object(utils, "convert_to_whisper_format", return_value=True),
+        patch.object(utils, "annotate2", return_value=SEGMENTS) as transcribe,
+    ):
+        page = AppTest.from_file(str(ROOT / "pages" / "wspy.py")).run()
+        if method == "youtube":
+            page.text_input[0].set_value("https://youtu.be/C0DPdy98e4c").run()
+        button = "transcribe_yt" if method == "youtube" else "transcribe_upload"
+        page.button(key=button).click().run()
+        assert page.text_area[0].value == "hello world hello again"
+        page.text_area[0].set_value("edited transcript").run()
+        page.run()
+        assert not page.exception
+        assert page.text_area[0].value == "edited transcript"
+        assert len(page.get("download_button")) == 1
+        assert transcribe.call_count == 1
+
+        page.selectbox[0].set_value("tiny").run()
+        assert not page.text_area
+        assert not page.get("download_button")
+        page.button(key=button).click().run()
+        assert page.text_area[0].value == "hello world hello again"
+        if method == "youtube":
+            page.text_input[0].set_value("https://youtu.be/rdzKbICr1A0").run()
+        else:
+            upload.seek(0)
+            upload.write(b"other recording")
+            page.run()
+        assert not page.text_area
+        assert not page.get("download_button")
+        assert transcribe.call_count == 2

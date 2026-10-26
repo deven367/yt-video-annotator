@@ -16,6 +16,8 @@ You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/de
 
 The first transcription downloads the selected Whisper model. Use a YouTube video URL, or open the Audio Transcription page to upload an audio file.
 
+Completed Audio Transcription results and edited-text downloads remain available across page reruns. Changing the video, uploaded recording, or model clears the previous result; ordinary widget interactions do not transcribe again.
+
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
 
 To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
