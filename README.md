@@ -18,6 +18,8 @@ Streamlit options can be passed through, for example `run_app --server.port=8502
 
 The first transcription downloads the selected Whisper model. Use a YouTube video URL, or open the Audio Transcription page to upload an audio file.
 
+Download, model-loading, and transcription failures are shown as handled errors. Correct the input or backend problem and click the same action to retry; failed operations are not cached as completed transcripts.
+
 Completed Audio Transcription results and edited-text downloads remain available across page reruns. Changing the video, uploaded recording, or model clears the previous result; ordinary widget interactions do not transcribe again.
 
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
