@@ -1,1 +1,2 @@
-.
+# The native Spaces SDK installs requirements before copying the app source.
+annotator @ git+https://huggingface.co/spaces/deven367/yt-video-annotator-hf@main
