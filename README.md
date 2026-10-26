@@ -3,7 +3,7 @@ title: Yt Video Annotator
 colorFrom: green
 colorTo: blue
 sdk: streamlit
-sdk_version: 1.25.0
+sdk_version: 1.66.1
 python_version: "3.11"
 app_file: annotator/app.py
 pinned: false
