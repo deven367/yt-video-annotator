@@ -9,7 +9,7 @@ You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/de
 
 ## Installation
 
-1. Create a Python 3.8+ virtual env with the environment manager of your choice
+1. Create a Python 3.11+ virtual env with the environment manager of your choice.
 2. Activate the environment
 3. Install [FFmpeg](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, then install the Python dependencies using ```pip install -e .```
 4. To run the app locally in your terminal, type `run_app` from any writable directory. The installed package includes the main UI and Audio Transcription page; audio and SRT files are stored under the working directory.
@@ -23,6 +23,8 @@ Completed Audio Transcription results and edited-text downloads remain available
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
 
 To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
+
+CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel outside the checkout, and smoke-check source and editable installations on that minimum version.
 
 ## Contributing
 
