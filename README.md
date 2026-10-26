@@ -49,7 +49,7 @@ CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel
 
 ## Hugging Face Spaces
 
-The Space uses the native Streamlit SDK, with its runtime and packaged app entrypoint selected in the README header. `packages.txt` installs FFmpeg. The SDK installs dependencies before copying source, so `requirements.txt` installs this project from a pinned application commit in the Space repository; update that revision when syncing code changes to invalidate the SDK's dependency cache. Application dependencies remain defined in `pyproject.toml`.
+The Space uses the native Streamlit SDK, with its runtime and packaged app entrypoint selected in the README header. `packages.txt` installs FFmpeg. The SDK installs dependencies before copying source, so `requirements.txt` installs this project from a pinned GitHub source archive, avoiding Git partial-clone failures. Update that revision when syncing code changes to invalidate the SDK's dependency cache. Application dependencies remain defined in `pyproject.toml`.
 
 ## Contributing
 
