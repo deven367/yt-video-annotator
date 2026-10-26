@@ -24,6 +24,12 @@ Completed Audio Transcription results and edited-text downloads remain available
 
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
 
+The main-page transcript cache expires after one hour and holds at most 32 videos. Converted WAVs in `audio/` are limited to 32 files and 512 MiB, keeping the most recently used files. Cleanup runs when audio is acquired and after a conversion is published; evicted videos are downloaded again on demand.
+
+Each operation pins its audio with a temporary hard link, so eviction cannot remove audio still being transcribed. Working paths are removed on context exit, including errors. Oversized audio is processed without retaining a cache entry. Active downloads/processing can temporarily exceed the cache budget; unrelated audio files, models, and SRT outputs are not part of this cache policy.
+
+For Python callers, `get_audio` is a context manager: keep transcription inside `with get_audio(url) as (audio_path, was_cached):` so the working path remains valid.
+
 To run the regression tests, install the development dependencies with `pip install -e '.[dev]'`, then run `python -m pytest tests`.
 
 CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel outside the checkout, and smoke-check source and editable installations on that minimum version.

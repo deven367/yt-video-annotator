@@ -107,17 +107,15 @@ def main():
                         try:
                             video_id = get_v_from_url(url)
 
-                            # Download and convert audio (uses caching)
-                            audio_path, was_cached = get_audio(url)
+                            with get_audio(url) as (audio_path, was_cached):
+                                if was_cached:
+                                    st.info(f"Using cached audio for: {video_id}")
+                                else:
+                                    st.success(f"Audio downloaded and converted: {audio_path.name}")
 
-                            if was_cached:
-                                st.info(f"Using cached audio for: {video_id}")
-                            else:
-                                st.success(f"Audio downloaded and converted: {audio_path.name}")
-
-                            with st.spinner("Transcribing... This may take a while."):
-                                segments = annotate2(str(audio_path), model_size=model_size)
-                                segments = filter_blank_audio(segments)
+                                with st.spinner("Transcribing... This may take a while."):
+                                    segments = annotate2(str(audio_path), model_size=model_size)
+                                    segments = filter_blank_audio(segments)
 
                             st.session_state["yt_result"] = {
                                 "source": source,

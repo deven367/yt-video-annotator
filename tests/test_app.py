@@ -1,4 +1,5 @@
 import subprocess
+from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -25,7 +26,7 @@ def test_model_choices_are_supported():
 def app(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     st.cache_data.clear()
-    with patch.object(utils, "get_audio", return_value=(tmp_path / "audio.wav", True)):
+    with patch.object(utils, "get_audio", return_value=nullcontext((tmp_path / "audio.wav", True))):
         with patch.object(utils, "annotate2", return_value=SEGMENTS):
             yield AppTest.from_file(str(ROOT / "app.py")).run()
     st.cache_data.clear()
@@ -165,7 +166,7 @@ def test_transcription_survives_reruns_and_tracks_source_and_model(
     upload.name = "recording.wav"
     with (
         patch.object(st, "file_uploader", return_value=upload if method == "upload" else None),
-        patch.object(utils, "get_audio", return_value=(tmp_path / "audio.wav", True)),
+        patch.object(utils, "get_audio", return_value=nullcontext((tmp_path / "audio.wav", True))),
         patch.object(utils, "convert_to_whisper_format", return_value=True),
         patch.object(utils, "annotate2", return_value=SEGMENTS) as transcribe,
     ):
