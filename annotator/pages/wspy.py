@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 
 import streamlit as st
 
+from annotator.playback import playback_state, seek_to
 from annotator.utils import (
     annotate2,
     convert_to_whisper_format,
@@ -47,11 +48,23 @@ def render_result(key, source):
     text = st.text_area(
         "Full Transcription", full_text, height=200, key=f"{key}_text_{source}"
     )
-    with st.expander("View Timestamped Segments"):
-        for seg in segments:
+    with st.expander(
+        "View Timestamped Segments", key=f"{key}_segments", on_change="rerun"
+    ):
+        for index, seg in enumerate(segments):
             start = format_timestamp(seg.t0)
             end = format_timestamp(seg.t1)
-            st.markdown(f"**[{start} - {end}]** {seg.text.strip()}")
+            timestamp, text_column = st.columns([1, 3])
+            with timestamp:
+                st.button(
+                    start,
+                    key=f"{key}_segment_{index}",
+                    on_click=seek_to,
+                    args=(f"{key}_playback", source, seg.t0 // 100),
+                    help=f"Play from {start}",
+                    type="tertiary",
+                )
+            text_column.markdown(f"**- {end}** {seg.text.strip()}")
     st.download_button(
         "Download Transcription", text, file_name=result["filename"],
         mime="text/plain", key=f"{key}_download",
@@ -94,11 +107,16 @@ def main():
         source = (url, model_size)
         if st.session_state.get("yt_result", {}).get("source") != source:
             st.session_state.pop("yt_result", None)
+        playback = playback_state("yt_result_playback", source)
         if url:
             col1, col2 = st.columns([1, 1])
 
             with col1:
-                st.video(url)
+                with st.container(key=f"yt_player_{playback['revision']}"):
+                    st.video(
+                        url, start_time=playback["start_time"],
+                        autoplay=playback["autoplay"],
+                    )
 
             with col2:
                 if st.button("Start Transcription", key="transcribe_yt"):
@@ -140,8 +158,13 @@ def main():
         )
         if st.session_state.get("upload_result", {}).get("source") != source:
             st.session_state.pop("upload_result", None)
+        playback = playback_state("upload_result_playback", source)
         if uploaded_file is not None:
-            st.audio(uploaded_file)
+            with st.container(key=f"upload_player_{playback['revision']}"):
+                st.audio(
+                    uploaded_file, start_time=playback["start_time"],
+                    autoplay=playback["autoplay"],
+                )
 
             if st.button("Start Transcription", key="transcribe_upload"):
                 st.session_state.pop("upload_result", None)

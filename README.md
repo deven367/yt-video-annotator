@@ -33,6 +33,8 @@ Download, model-loading, and transcription failures are shown as handled errors.
 
 Completed Audio Transcription results and edited-text downloads remain available across page reruns. Changing the video, uploaded recording, or model clears the previous result; ordinary widget interactions do not transcribe again.
 
+Click a word-search timestamp or a segment's start time in **View Timestamped Segments** to seek the existing video/audio player. Seeking preserves results, edited text, and downloads without downloading or transcribing again. Clicking the same timestamp seeks again; changing the video, recording, or model resets playback. Media seeks use whole-second precision (segment starts are rounded down); press Play if your browser blocks autoplay.
+
 Some YouTube videos also require a JavaScript runtime; follow [yt-dlp's setup instructions](https://github.com/yt-dlp/yt-dlp/wiki/EJS) if extraction reports a missing runtime.
 
 The main-page transcript cache expires after one hour and holds at most 32 videos. Converted WAVs in `audio/` are limited to 32 files and 512 MiB, keeping the most recently used files. Cleanup runs when audio is acquired and after a conversion is published; evicted videos are downloaded again on demand.

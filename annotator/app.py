@@ -2,6 +2,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from annotator.playback import playback_state, seek_to
 from annotator.utils import (
     annotate2,
     df_from_result,
@@ -74,7 +75,11 @@ def main():
 
     with col1:
         url = st.text_input("Enter URL for the YT video", place)
-        st.video(url)
+        playback = playback_state("search_playback", url)
+        with st.container(key=f"search_player_{playback['revision']}"):
+            st.video(
+                url, start_time=playback["start_time"], autoplay=playback["autoplay"]
+            )
 
     with col2:
         default_opt = "Search for words"
@@ -87,20 +92,38 @@ def main():
             st.markdown("### Search for words in the video")
             words = st.text_input("Enter words separated by a comma")
             words = [w.strip() for w in words.split(",") if w.strip()]
+            source = (url, tuple(words))
+            if st.session_state.get("word_results", {}).get("source") != source:
+                st.session_state.pop("word_results", None)
 
             if st.button("Get Timestamps") and words:
+                st.session_state.pop("word_results", None)
                 with st.spinner("Processing video..."):
                     audio_src, df = caption_from_url(url)
-
                     if df is not None:
-                        times = find_word_timestamp(df, *words)
+                        st.session_state["word_results"] = {
+                            "source": source,
+                            "times": find_word_timestamp(df, *words),
+                        }
 
-                        st.markdown("### Results")
-                        for word, timestamps in zip(words, times):
-                            if len(timestamps) > 0:
-                                st.success(f"**{word}** found at: {', '.join(map(str, timestamps))}")
-                            else:
-                                st.warning(f"**{word}** not found in the video")
+            result = st.session_state.get("word_results")
+            if result is not None:
+                st.markdown("### Results")
+                for word_index, (word, timestamps) in enumerate(zip(words, result["times"])):
+                    if timestamps:
+                        st.success(f"**{word}**")
+                        with st.container(horizontal=True, gap="small"):
+                            for match_index, timestamp in enumerate(timestamps):
+                                st.button(
+                                    timestamp,
+                                    key=f"word_match_{word_index}_{match_index}",
+                                    on_click=seek_to,
+                                    args=("search_playback", url, timestamp),
+                                    help=f"Play {word} from {timestamp}",
+                                    type="tertiary",
+                                )
+                    else:
+                        st.warning(f"**{word}** not found in the video")
 
         else:
             if st.button("Generate SRT"):
