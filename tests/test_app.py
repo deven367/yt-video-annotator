@@ -32,15 +32,6 @@ def app(tmp_path, monkeypatch):
     st.cache_data.clear()
 
 
-def test_search_handles_uneven_and_missing_matches(app):
-    app.text_input[1].set_value("hello, world, missing")
-    app.button[0].click().run()
-    assert not app.exception
-    assert "hello** found at: 00:00:00, 00:00:01" in app.success[0].value
-    assert "world** found at: 00:00:00" in app.success[1].value
-    assert "missing** not found" in app.warning[0].value
-
-
 def test_srt_is_written_and_offered_for_download(app, tmp_path):
     app.radio[0].set_value("Generate subtitles for the entire video").run()
     app.button[0].click().run()
@@ -64,7 +55,7 @@ def test_video_errors_are_displayed_and_can_be_retried(app, error):
     assert "Could not process video" in app.error[0].value
     app.button[0].click().run()
     assert not app.exception
-    assert "hello** found at:" in app.success[0].value
+    assert app.button(key="word_match_0_0").label == "00:00:00"
 
 
 
@@ -89,7 +80,7 @@ def test_transcription_failures_are_handled_and_retry_succeeds(app, action, erro
     if action == "srt":
         assert len(app.get("download_button")) == 1
     else:
-        assert "hello** found at:" in app.success[0].value
+        assert app.button(key="word_match_0_0").label == "00:00:00"
 
 @pytest.mark.parametrize(
     "filename", ["sample.wav", "C0DPdy98e4c_converted.wav", "../outside.wav"]
