@@ -1,9 +1,10 @@
 import re
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 import pandas as pd
@@ -12,6 +13,8 @@ from pywhispercpp.utils import to_timestamp
 
 ROOT_PATH = Path(__file__).parent.parent
 AUDIO_PATH = Path("./audio")
+AUDIO_CACHE_MAX_BYTES = 512 * 1024 * 1024
+AUDIO_CACHE_MAX_ENTRIES = 32
 
 
 def start_app():
@@ -75,41 +78,63 @@ def convert_to_whisper_format(input_path: Path, output_path: Path) -> bool:
         return False
 
 
-def get_audio(url: str, force_download: bool = False) -> Tuple[Path, bool]:
-    """
-    Download and convert audio from YouTube URL.
+def _prune_audio_cache():
+    entries = []
+    for path in AUDIO_PATH.glob("*_converted.wav"):
+        try:
+            stat = path.stat()
+        except FileNotFoundError:
+            continue
+        entries.append((stat.st_mtime_ns, stat.st_size, path))
+    total, kept = 0, 0
+    for _, size, path in sorted(entries, key=lambda entry: entry[0], reverse=True):
+        if kept < AUDIO_CACHE_MAX_ENTRIES and total + size <= AUDIO_CACHE_MAX_BYTES:
+            total += size
+            kept += 1
+        else:
+            path.unlink(missing_ok=True)
 
-    Checks if audio already exists and is properly converted before downloading.
 
-    Args:
-        url: YouTube video URL
-        force_download: If True, re-download even if cached
-
-    Returns:
-        Tuple of (path to converted audio file, whether it was cached)
-    """
+@contextmanager
+def get_audio(url: str, force_download: bool = False) -> Iterator[Tuple[Path, bool]]:
+    """Yield an audio path protected from eviction until the context exits."""
     video_id = get_v_from_url(url)
     ensure_audio_dir()
-
+    _prune_audio_cache()
     converted_path = AUDIO_PATH / f"{video_id}_converted.wav"
-    if not force_download:
-        cached = get_cached_audio(video_id)
-        if cached is not None:
-            return cached, True
 
     with TemporaryDirectory(dir=AUDIO_PATH) as temp_dir:
-        downloaded_path = Path(temp_dir) / "audio.wav"
-        subprocess.run(
-            [
-                "yt-dlp", "--no-playlist", "-x", "--audio-format", "wav",
-                "-o", str(Path(temp_dir) / "audio.%(ext)s"),
-                "--", f"https://www.youtube.com/watch?v={video_id}",
-            ],
-            check=True,
-        )
-        if not convert_to_whisper_format(downloaded_path, converted_path):
-            raise RuntimeError(f"Could not convert audio for video {video_id}")
-    return converted_path, False
+        audio_path = Path(temp_dir) / converted_path.name
+        was_cached = False
+        if not force_download:
+            try:
+                cached = get_cached_audio(video_id)
+                if cached is not None:
+                    audio_path.hardlink_to(cached)
+                    audio_path.touch()
+                    was_cached = True
+            except FileNotFoundError:
+                pass  # Another worker evicted the entry; download it again.
+
+        if not was_cached:
+            downloaded_path = Path(temp_dir) / "audio.wav"
+            subprocess.run(
+                [
+                    "yt-dlp", "--no-playlist", "-x", "--audio-format", "wav",
+                    "-o", str(Path(temp_dir) / "audio.%(ext)s"),
+                    "--", f"https://www.youtube.com/watch?v={video_id}",
+                ],
+                check=True,
+            )
+            if not convert_to_whisper_format(downloaded_path, audio_path):
+                raise RuntimeError(f"Could not convert audio for video {video_id}")
+            downloaded_path.unlink()
+            cache_link = Path(temp_dir) / "cache.wav"
+            cache_link.hardlink_to(audio_path)
+            cache_link.replace(converted_path)
+
+        _prune_audio_cache()
+        yield audio_path, was_cached
 
 
 def get_v_from_url(url: str):

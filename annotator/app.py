@@ -37,7 +37,7 @@ def make_sidebar():
         )
 
 
-@st.cache_data
+@st.cache_data(ttl=3600, max_entries=32)
 def caption_from_url(url: str):
     """
     Download audio from URL and transcribe it.
@@ -46,8 +46,8 @@ def caption_from_url(url: str):
     """
     try:
         video_id = get_v_from_url(url)
-        audio_path, was_cached = get_audio(url)
-        result = filter_blank_audio(annotate2(str(audio_path)))
+        with get_audio(url) as (audio_path, was_cached):
+            result = filter_blank_audio(annotate2(str(audio_path)))
     except Exception as error:
         st.error(f"Could not process video: {error}")
         st.stop()
@@ -60,10 +60,10 @@ def caption_from_url(url: str):
 
     if not result:
         st.warning("No speech detected in the audio.")
-        return str(audio_path), None
+        return audio_path.name, None
 
     df = df_from_result(result)
-    return str(audio_path), df
+    return audio_path.name, df
 
 
 def main():

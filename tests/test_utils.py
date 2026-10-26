@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import wave
@@ -138,12 +139,15 @@ def test_download_and_cache(tmp_path, monkeypatch):
 
     with patch.object(utils.subprocess, "run", side_effect=download) as run:
         with patch.object(utils, "convert_to_whisper_format", side_effect=convert):
-            audio, cached = utils.get_audio(URL)
-            assert not cached
-            assert audio.read_bytes() == b"converted audio"
-            assert utils.get_audio(URL) == (audio, True)
+            with utils.get_audio(URL) as (audio, cached):
+                assert not cached
+                assert audio.read_bytes() == b"converted audio"
+                with utils.get_audio(URL) as (reused, cached):
+                    assert cached
+                    assert reused.read_bytes() == audio.read_bytes()
     assert run.call_count == 1
-    assert list(audio_dir.iterdir()) == [audio]
+    assert not audio.exists()
+    assert list(audio_dir.iterdir()) == [utils.get_cached_audio(VIDEO_ID)]
 
 
 @pytest.mark.parametrize("failure", ["download", "conversion"])
@@ -163,6 +167,81 @@ def test_download_failures_do_not_return_stale_or_partial_audio(
     with patch.object(utils.subprocess, "run", side_effect=download):
         with patch.object(utils, "convert_to_whisper_format", return_value=False):
             with pytest.raises((subprocess.CalledProcessError, RuntimeError)):
-                utils.get_audio(URL, force_download=True)
+                with utils.get_audio(URL, force_download=True):
+                    pytest.fail("Failed processing must not yield an audio path")
     assert cached.read_bytes() == b"previous valid audio"
     assert list(tmp_path.iterdir()) == [cached]
+
+
+@pytest.mark.parametrize("bound", ["bytes", "entries"])
+def test_eviction_preserves_active_audio_and_allows_redownload(tmp_path, monkeypatch, bound):
+    monkeypatch.setattr(utils, "AUDIO_PATH", tmp_path)
+    if bound == "bytes":
+        monkeypatch.setattr(utils, "AUDIO_CACHE_MAX_BYTES", 5)
+    else:
+        monkeypatch.setattr(utils, "AUDIO_CACHE_MAX_ENTRIES", 1)
+    original = tmp_path / f"{VIDEO_ID}_converted.wav"
+    original.write_bytes(b"older")
+    unrelated = tmp_path / "recording.wav"
+    unrelated.write_bytes(b"keep me")
+    other_url = "https://youtu.be/rdzKbICr1A0"
+
+    def download(command, **kwargs):
+        output = command[command.index("-o") + 1].replace("%(ext)s", "wav")
+        Path(output).write_bytes(b"downloaded audio")
+
+    def convert(source, output):
+        output.write_bytes(b"fresh")
+        return True
+
+    with (
+        patch.object(utils.subprocess, "run", side_effect=download) as run,
+        patch.object(utils, "convert_to_whisper_format", side_effect=convert),
+    ):
+        with utils.get_audio(URL) as (active, cached):
+            assert cached
+            os.utime(active, (1, 1))
+            with utils.get_audio(other_url) as (other, cached):
+                assert not cached
+                assert utils.get_cached_audio(VIDEO_ID) is None
+                assert active.read_bytes() == b"older"
+                with utils.get_audio(other_url) as (reused, cached):
+                    assert cached
+                    assert reused.read_bytes() == b"fresh"
+                os.utime(other, (1, 1))
+                with utils.get_audio(URL) as (downloaded, cached):
+                    assert not cached
+                    assert downloaded.read_bytes() == b"fresh"
+                    assert active.read_bytes() == b"older"
+                    assert other.read_bytes() == b"fresh"
+        assert run.call_count == 2
+    assert not active.exists()
+    assert not other.exists()
+    assert set(tmp_path.iterdir()) == {original, unrelated}
+    assert unrelated.read_bytes() == b"keep me"
+
+
+def test_oversized_audio_is_only_retained_during_processing(tmp_path, monkeypatch):
+    monkeypatch.setattr(utils, "AUDIO_PATH", tmp_path)
+    monkeypatch.setattr(utils, "AUDIO_CACHE_MAX_BYTES", 4)
+    cached_path = tmp_path / f"{VIDEO_ID}_converted.wav"
+
+    def download(command, **kwargs):
+        Path(command[command.index("-o") + 1].replace("%(ext)s", "wav")).write_bytes(b"source")
+
+    def convert(source, output):
+        output.write_bytes(b"large")
+        return True
+
+    with (
+        patch.object(utils.subprocess, "run", side_effect=download),
+        patch.object(utils, "convert_to_whisper_format", side_effect=convert),
+    ):
+        with pytest.raises(RuntimeError, match="inference failed"):
+            with utils.get_audio(URL) as (audio, was_cached):
+                assert not was_cached
+                assert not cached_path.exists()
+                assert audio.read_bytes() == b"large"
+                raise RuntimeError("inference failed")
+    assert not audio.exists()
+    assert not list(tmp_path.iterdir())
