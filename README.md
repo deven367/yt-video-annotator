@@ -12,7 +12,9 @@ You can find the deployed app &rarr; [**here**](https://huggingface.co/spaces/de
 1. Create a Python 3.8+ virtual env with the environment manager of your choice
 2. Activate the environment
 3. Install [FFmpeg](https://ffmpeg.org/download.html) and ensure `ffmpeg` is on your PATH, then install the Python dependencies using ```pip install -e .```
-4. To run the app locally in your terminal, type `run_app`
+4. To run the app locally in your terminal, type `run_app` from any writable directory. The installed package includes the main UI and Audio Transcription page; audio and SRT files are stored under the working directory.
+
+Streamlit options can be passed through, for example `run_app --server.port=8502`. Launcher failures return Streamlit's nonzero exit status.
 
 The first transcription downloads the selected Whisper model. Use a YouTube video URL, or open the Audio Transcription page to upload an audio file.
 
