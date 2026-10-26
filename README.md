@@ -45,6 +45,10 @@ To run the regression tests, install the development dependencies with `pip inst
 
 CI uses uv to build the sdist and wheel on Python 3.11, test the installed wheel outside the checkout, and smoke-check source and editable installations on that minimum version.
 
+## Hugging Face Spaces
+
+The Space uses the native Streamlit SDK, with its runtime and packaged app entrypoint selected in the README header. `packages.txt` installs FFmpeg. The SDK installs dependencies before copying source, so `requirements.txt` installs this project from a pinned application commit in the Space repository; update that revision when syncing code changes to invalidate the SDK's dependency cache. Application dependencies remain defined in `pyproject.toml`.
+
 ## Contributing
 
 Issues and PRs are welcome. If you want me to implement a feature, create a Feature Request in the issues, I'll try my best to implement it.
