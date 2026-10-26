@@ -11,7 +11,7 @@ from streamlit.testing.v1 import AppTest
 
 from annotator import utils
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(utils.__file__).resolve().parent
 SEGMENTS = [Segment(0, 125, "hello world"), Segment(125, 250, " hello again")]
 
 
