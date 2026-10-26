@@ -1,5 +1,6 @@
 import re
 import subprocess
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
@@ -14,7 +15,10 @@ AUDIO_PATH = Path("./audio")
 
 
 def start_app():
-    subprocess.run(["streamlit", "run", "app.py"])
+    app_path = Path(__file__).with_name("app.py")
+    return subprocess.run(
+        [sys.executable, "-m", "streamlit", "run", str(app_path), *sys.argv[1:]]
+    ).returncode
 
 
 def ensure_audio_dir():
